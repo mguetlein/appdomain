@@ -124,7 +124,12 @@ class AppDomainTest < Test::Unit::TestCase
       #dataset_uri = "http://opentox.informatik.uni-freiburg.de/dataset/1962" #kazius cdk 250
       #prediction_feature = "http://apps.ideaconsult.net:8080/ambit2/feature/5643728"
       
-     params = {:dataset_uri => training_dataset_uri, :prediction_feature => prediction_feature }
+      
+      prediction_feature="http://opentox.informatik.uni-freiburg.de/dataset/3087/feature/MTP"
+      training_dataset_uri="http://opentox.informatik.uni-freiburg.de/dataset/4338" 
+      test_dataset_uri="http://opentox.informatik.uni-freiburg.de/dataset/4339"
+      
+        params = {:dataset_uri => training_dataset_uri, :prediction_feature => prediction_feature }
       
      post "/#{alg}",params
      uri = last_response.body

@@ -137,7 +137,7 @@ module AppDomain
       distances.sort!
       @median = distances.median
       
-      LOGGER.debug "init AD - done"
+      LOGGER.debug "init AD - done (median distance to center: #{@median}"
 
     end
     
@@ -163,7 +163,15 @@ module AppDomain
       #  ad = 1-((dist-@median)/(2*@median))
       #end
       
-      ad = EuclideanDistance.compute_ad(@median, dist)
+      if @median==0
+        if dist==0
+          ad = 0.9999999999
+        else
+          ad = 0.0000000001
+        end
+      else
+        ad = EuclideanDistance.compute_ad(@median, dist)
+      end
       
       #LOGGER.debug "AD for #{test_compound} : #{ad}"
       
@@ -181,5 +189,4 @@ module AppDomain
     end
   end
 end
-
 
