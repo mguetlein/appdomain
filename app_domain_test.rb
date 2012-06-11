@@ -79,13 +79,8 @@ class AppDomainTest < Test::Unit::TestCase
   def test_it
     begin
       
-      #AppDomain::AppDomainModel.all.each do |m|
-      #  m.delete
-      #end
-      #exit
-      
-      AppDomain::EuclideanDistance.demo()
-      exit
+     # AppDomain::EuclideanDistance.demo()
+     # exit
       
      # dataset = OpenTox::Dataset.create_from_csv_file(File.new("data/kazius.250.active.cdkdesc.csv").path, nil)
      # puts dataset.uri
@@ -118,7 +113,7 @@ class AppDomainTest < Test::Unit::TestCase
       prediction_feature = "http://local-ot/dataset/8998/feature/Hamster%20Carcinogenicity"
       alg = "EuclideanDistance"
       
-      #prediction_feature = "http://local-ot/dataset/7501/feature/LOGINV_MRDD_mmol"
+      #prediction_feature = "http://locar l-ot/dataset/7501/feature/LOGINV_MRDD_mmol"
       #training_dataset_uri= "http://local-ot/dataset/7502"
       #test_dataset_uri="http://local-ot/dataset/7503"
       #alg = "M5P"

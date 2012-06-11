@@ -61,12 +61,20 @@ get '/:app_domain_alg/:id' do
   when "application/rdf+xml"
     content_type "application/rdf+xml"
     model.to_rdf
-  when "/text\/html/"
+  when /text\/html/
     model.inspect
     OpenTox.text_to_html model.to_yaml
   else
     raise "not yet implemented"
   end  
+end
+
+delete '/:app_domain_alg/:id' do
+  model = AppDomain::AppDomainModel.get(params[:id])
+  raise OpenTox::NotFoundError.new("app-domain-model '#{params[:id]}' not found.") unless model
+  model.delete
+  content_type "text/plain"
+  "deleted model with id #{params[:id]}\n"
 end
 
 get '/:app_domain_alg/:id/predicted/:prop' do
