@@ -125,9 +125,12 @@ class AppDomainTest < Test::Unit::TestCase
       #prediction_feature = "http://apps.ideaconsult.net:8080/ambit2/feature/5643728"
       
       
-      prediction_feature="http://opentox.informatik.uni-freiburg.de/dataset/3087/feature/MTP"
-      training_dataset_uri="http://opentox.informatik.uni-freiburg.de/dataset/4338" 
-      test_dataset_uri="http://opentox.informatik.uni-freiburg.de/dataset/4339"
+      #prediction_feature="http://opentox.informatik.uni-freiburg.de/dataset/3087/feature/MTP"
+      #training_dataset_uri="http://opentox.informatik.uni-freiburg.de/dataset/4338" 
+      #test_dataset_uri="http://opentox.informatik.uni-freiburg.de/dataset/4339"
+      
+      prediction_feature="http://opentox.informatik.uni-freiburg.de/dataset/3088/feature/MTP"
+      training_dataset_uri="http://opentox.informatik.uni-freiburg.de/dataset/5877"
       
         params = {:dataset_uri => training_dataset_uri, :prediction_feature => prediction_feature }
       
@@ -137,6 +140,7 @@ class AppDomainTest < Test::Unit::TestCase
      puts "model #{model}"
      
      id = model.split("/").last
+     exit
      
 #     id = "2891"
 #     test_dataset_uri = "http://local-ot/dataset/8331"

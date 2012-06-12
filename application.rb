@@ -6,18 +6,20 @@ require 'app_domain.rb'
 post '/:app_domain_alg/:id' do
   model = AppDomain::AppDomainModel.get(params[:id])
   raise OpenTox::NotFoundError.new("app-domain-model '#{params[:id]}' not found.") unless model
+  LOGGER.info "applying appdomain model #{model.uri} with params #{params.inspect}"
   [:dataset_uri].each do |p|
     raise OpenTox::BadRequestError.new("#{p} missing") unless params[p].to_s.size>0
   end
-  LOGGER.debug "applying appdomain model #{model.uri} with params #{params.inspect}"
 
   dataset = model.find_predicted_model(params[:dataset_uri])
   if dataset
-    LOGGER.debug "found already existing prediction dataset #{dataset}"
+    LOGGER.info "found already existing appdomain result #{dataset}"
     dataset
   else
     task = OpenTox::Task.create( "Apply Model #{model.uri}", url_for("/", :full) ) do |task|
-      model.apply(params[:dataset_uri], task)
+      res = model.apply(params[:dataset_uri], task)
+      LOGGER.info "appdomain result : #{res}"
+      res  
     end
     return_task(task)
   end
@@ -27,16 +29,17 @@ post '/:app_domain_alg' do
   [:dataset_uri, :prediction_feature].each do |p|
     raise OpenTox::BadRequestError.new("#{p} missing") unless params[p].to_s.size>0
   end
-  LOGGER.debug "building app-domain model with params #{params.inspect}"
+  LOGGER.info "building app-domain model with params #{params.inspect}"
   
   model = AppDomain::AppDomainModel.find_model(params)
   if model
-    LOGGER.debug "found already existing model #{model}"
+    LOGGER.info "found already existing appdomain model #{model}"
     model
   else
     task = OpenTox::Task.create( "Create Model", url_for("/", :full) ) do |task|
       model = AppDomain::AppDomainModel.create(params,@subjectid)
       model.build(task)
+      LOGGER.info "appdomain model done : #{model.uri}"
       model.uri
       end
     return_task(task)
@@ -44,6 +47,7 @@ post '/:app_domain_alg' do
 end
 
 get '/?' do
+  LOGGER.debug "list appdomain models #{params.inspect}"
   uri_list = AppDomain::AppDomainModel.all.sort.collect{|v| v.uri}.join("\n") + "\n"
   if request.env['HTTP_ACCEPT'] =~ /text\/html/
     content_type "text/html"
@@ -55,6 +59,7 @@ get '/?' do
 end
 
 get '/:app_domain_alg/:id' do
+  LOGGER.debug "get appdomain model #{params.inspect}"
   model = AppDomain::AppDomainModel.get(params[:id])
   raise OpenTox::NotFoundError.new("app-domain-model '#{params[:id]}' not found.") unless model
   case request.env['HTTP_ACCEPT']
@@ -72,6 +77,7 @@ end
 delete '/:app_domain_alg/:id' do
   model = AppDomain::AppDomainModel.get(params[:id])
   raise OpenTox::NotFoundError.new("app-domain-model '#{params[:id]}' not found.") unless model
+  LOGGER.info "delete appdomain model #{model.uri} #{params.inspect}"
   model.delete
   content_type "text/plain"
   "deleted model with id #{params[:id]}\n"

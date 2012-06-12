@@ -128,7 +128,7 @@ module AppDomain
     
     def to_rdf
       s = OpenTox::Serializer::Owl.new
-      LOGGER.debug metadata.to_yaml
+      #LOGGER.debug metadata.to_yaml
       s.add_model(uri,metadata)
       s.to_rdfxml
     end    
