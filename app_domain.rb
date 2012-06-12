@@ -55,7 +55,19 @@ module AppDomain
     end
 
     def find_predicted_model(dataset_uri)
-      predicted_datasets[dataset_uri] 
+      if self.predicted_datasets[dataset_uri]
+        if OpenTox::Dataset.exist?(dataset)
+          self.predicted_datasets[dataset_uri]
+        else
+          hash = self.predicted_datasets
+          hash.delete(dataset_uri)
+          self.predicted_datasets = hash
+          self.save
+          nil
+        end
+      else
+        nil
+      end
     end
     
     def self.find_model(params)
