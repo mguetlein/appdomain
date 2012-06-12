@@ -56,7 +56,7 @@ module AppDomain
 
     def find_predicted_model(dataset_uri)
       if self.predicted_datasets[dataset_uri]
-        if OpenTox::Dataset.exist?(dataset)
+        if OpenTox::Dataset.exist?(dataset_uri)
           self.predicted_datasets[dataset_uri]
         else
           hash = self.predicted_datasets
