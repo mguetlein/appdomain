@@ -22,12 +22,12 @@ def self.demo1(dataset1, dataset2)
       data.add_feature(f,m)
       d.compounds.each do |c|
         d.data_entries[c][f].each do |v|
-          data.add(c,f,v)
+          data.add(c,f,v,true)
         end if d.data_entries[c][f]
       end
     end
     d.compounds.each do |c|
-      data.add(c,featureD,d==dataset1 ? "dataset1" : "dataset2")
+      data.add(c,featureD,d==dataset1 ? "dataset1" : "dataset2",true)
     end
   end
   
@@ -37,7 +37,7 @@ def self.demo1(dataset1, dataset2)
   data.add_feature(feature)
   dataset2.compounds.each do |c|
     ad = alg.ad(c, dataset2)
-    data.add(c,feature,ad)
+    data.add(c,feature,ad,true)
   end
   
   data.save
@@ -59,7 +59,7 @@ def self.demo2(dataset)
     data.add_feature(f,dataset.features[f])
     compounds.each do |c|
       dataset.data_entries[c][f].each do |v|
-        data.add(c,f,v)
+        data.add(c,f,v,true)
       end if dataset.data_entries[c][f]
     end
   end
@@ -73,7 +73,7 @@ def self.demo2(dataset)
     end
     alg = AppDomain::EuclideanDistance.new(tmpDataset, dataset, features)
     ad = alg.ad(c, dataset)
-    data.add(c,feature,ad)
+    data.add(c,feature,ad,true)
   end
   
   data.save

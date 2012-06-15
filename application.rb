@@ -13,12 +13,12 @@ post '/:app_domain_alg/:id' do
 
   dataset = model.find_predicted_model(params[:dataset_uri])
   if dataset
-    LOGGER.info "found already existing appdomain result #{dataset}"
+    LOGGER.info "found already existing appdomain result: #{dataset}"
     dataset
   else
     task = OpenTox::Task.create( "Apply Model #{model.uri}", url_for("/", :full) ) do |task|
       res = model.apply(params[:dataset_uri], task)
-      LOGGER.info "appdomain result : #{res}"
+      LOGGER.info "appdomain prediction result: #{res}"
       res  
     end
     return_task(task)
@@ -33,13 +33,13 @@ post '/:app_domain_alg' do
   
   model = AppDomain::AppDomainModel.find_model(params)
   if model
-    LOGGER.info "found already existing appdomain model #{model}"
+    LOGGER.info "found already existing appdomain model: #{model}"
     model
   else
     task = OpenTox::Task.create( "Create Model", url_for("/", :full) ) do |task|
       model = AppDomain::AppDomainModel.create(params,@subjectid)
       model.build(task)
-      LOGGER.info "appdomain model done : #{model.uri}"
+      LOGGER.info "appdomain model created: #{model.uri}"
       model.uri
       end
     return_task(task)

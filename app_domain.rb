@@ -156,7 +156,7 @@ module AppDomain
       dataset.add_feature(predicted_feature)
       count = 0
       test_dataset.compounds.each do |c|
-        dataset.add(c,predicted_feature,model.ad(c,test_dataset))
+        dataset.add(c,predicted_feature,model.ad(c,test_dataset),true)
       end
       dataset.save(subjectid)
       
