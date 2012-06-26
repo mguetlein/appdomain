@@ -105,6 +105,7 @@ class AppDomainTest < Test::Unit::TestCase
       #kazius 250 ob
       dataset_uri = "http://local-ot/dataset/1623"
       prediction_feature = "http://local-ot/dataset/1623/feature/endpoint"
+      
       #       0.3 - 0.7 split
       training_dataset_uri = "http://local-ot/dataset/48761"
       test_dataset_uri = "http://local-ot/dataset/48762"
@@ -129,10 +130,10 @@ class AppDomainTest < Test::Unit::TestCase
       #training_dataset_uri="http://opentox.informatik.uni-freiburg.de/dataset/4338" 
       #test_dataset_uri="http://opentox.informatik.uni-freiburg.de/dataset/4339"
       
-      prediction_feature="http://opentox.informatik.uni-freiburg.de/dataset/3088/feature/MTP"
-      training_dataset_uri="http://opentox.informatik.uni-freiburg.de/dataset/5877"
+     prediction_feature="http://opentox.informatik.uni-freiburg.de/dataset/3088/feature/MTP"
+     training_dataset_uri="http://opentox.informatik.uni-freiburg.de/dataset/5877"
       
-        params = {:dataset_uri => training_dataset_uri, :prediction_feature => prediction_feature }
+     params = {:dataset_uri => training_dataset_uri, :prediction_feature => prediction_feature, :app_domain_param_method=>"knn" }
       
      post "/#{alg}",params
      uri = last_response.body

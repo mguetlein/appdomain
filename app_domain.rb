@@ -18,7 +18,7 @@ module AppDomain
     attribute :date
     attribute :creator
     attribute :app_domain_alg
-    attribute :algorithm_params
+    attribute :app_domain_params
     attribute :training_dataset_uri
     attribute :prediction_feature
     attribute :independent_features_yaml
@@ -27,6 +27,7 @@ module AppDomain
     attribute :finished
     
     index :app_domain_alg
+    index :app_domain_params
     index :prediction_feature
     index :training_dataset_uri
     index :finished
@@ -53,6 +54,17 @@ module AppDomain
       raise OpenTox::BadRequestError.new("unknown app-domain alg #{app_domain_alg}") unless
         app_domain_alg and app_domain_alg =~ /EuclideanDistance/
     end
+    
+    def split_app_domain_params()
+      res = {}
+      self.app_domain_params.split(";").each do |alg_params|
+        alg_param = alg_params.split("=",2)
+        raise OpenTox::BadRequestError.new "invalid algorithm param: '"+alg_params.to_s+"'" unless alg_param.size==2 or alg_param[0].to_s.size<1 or alg_param[1].to_s.size<1
+        LOGGER.warn "algorihtm param contains empty space, encode? "+alg_param[1].to_s if alg_param[1] =~ /\s/
+        res[alg_param[0].to_sym] = alg_param[1]
+      end if self.app_domain_params
+      res
+    end    
 
     def find_predicted_model(dataset_uri)
       if self.predicted_datasets[dataset_uri]
@@ -107,7 +119,7 @@ module AppDomain
         dataset = OpenTox::Dataset.find(self.training_dataset_uri)
         features = dataset.features.keys - [ self.prediction_feature ]
         raise "no features in dataset" if features.size==0 
-        self.model_yaml = AppDomain::EuclideanDistance.new(dataset, dataset, features).to_yaml
+        self.model_yaml = AppDomain::EuclideanDistance.new(dataset, dataset, features, self.split_app_domain_params()).to_yaml
       end
       self.finished = true
       self.save

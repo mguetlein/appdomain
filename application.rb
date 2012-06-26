@@ -3,6 +3,24 @@ require 'opentox-ruby'
 
 require 'app_domain.rb'
 
+before do
+  app_domain_params = {}
+  params.each do |k,v|
+    if k.to_s=~/^app_domain_param_/
+      app_domain_params[k.to_s.gsub(/^app_domain_param_/,"")] = v
+      params.delete(k)
+    end
+  end
+  if app_domain_params.size>0
+    value = ""
+    app_domain_params.each do |k,v|
+      value += ";" if value.size>0
+      value += k.to_s+"="+v.to_s
+    end
+    params[:app_domain_params] = value
+  end  
+end  
+
 post '/:app_domain_alg/:id' do
   model = AppDomain::AppDomainModel.get(params[:id])
   raise OpenTox::NotFoundError.new("app-domain-model '#{params[:id]}' not found.") unless model
