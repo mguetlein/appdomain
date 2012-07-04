@@ -94,6 +94,7 @@ module AppDomain
       end
       p[:finished] = true
       #puts p.to_yaml
+      [:splat,:captures].each{|k| p.delete(k)}
       set = AppDomain::AppDomainModel.find(p)
       if (set.size==0)
         nil
@@ -108,6 +109,7 @@ module AppDomain
       params[:creator] = AA_SERVER ? OpenTox::Authorization.get_user(subjectid) : "unknown"
       params[:training_dataset_uri] = params.delete("dataset_uri")
       params[:finished] = false
+      ["splat","captures"].each{|k| params.delete(k)}
       model = super params
       model.subjectid = subjectid
       model
