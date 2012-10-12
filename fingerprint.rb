@@ -199,7 +199,11 @@ module AppDomain
       end
       #puts "and "+and_.to_s
       #puts "or "+or_.to_s
-      1-(and_ / or_.to_f)
+      if and_==0
+        1
+      else
+        1 - (and_ / or_.to_f)
+      end
     end
     
     def fingerprint(c,d)
