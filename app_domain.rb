@@ -1,5 +1,6 @@
 
 require 'euclidean_distance.rb'
+require 'fingerprint.rb'
 
 set :lock, true
 
@@ -25,12 +26,14 @@ module AppDomain
     attribute :predicted_datasets_yaml
     attribute :model_yaml
     attribute :finished
+    attribute :weight_model_uri
     
     index :app_domain_alg
     index :app_domain_params
     index :prediction_feature
     index :training_dataset_uri
     index :finished
+    index :weight_model_uri
     
     attr_accessor :subjectid
     
@@ -52,7 +55,7 @@ module AppDomain
     
     def self.check_app_domain_alg(app_domain_alg)
       raise OpenTox::BadRequestError.new("unknown app-domain alg #{app_domain_alg}") unless
-        app_domain_alg and app_domain_alg =~ /EuclideanDistance/
+        app_domain_alg and app_domain_alg =~ /EuclideanDistance|Fingerprint/ 
     end
     
     def split_app_domain_params()
@@ -66,7 +69,7 @@ module AppDomain
       res
     end    
 
-    def find_predicted_model(dataset_uri)
+    def find_predicted_dataset(dataset_uri)
       if self.predicted_datasets[dataset_uri]
         if OpenTox::Dataset.exist?(predicted_datasets[dataset_uri])
           self.predicted_datasets[dataset_uri]
@@ -115,13 +118,26 @@ module AppDomain
       model
     end
     
+    def self.feature_weights(weight_model_uri)
+      feature_weights_str = OpenTox::RestClientWrapper.get(weight_model_uri+"/weights")
+      feature_weights = {}
+      feature_weights_str.split("\n").each do |line|
+        vals = line.split(" ")
+        feature_weights[vals[0].to_s] = vals[1].to_f
+      end
+      feature_weights
+    end
+    
     def build(waiting_task=nil)
-      case self.app_domain_alg
+      dataset = OpenTox::Dataset.find(self.training_dataset_uri)
+      features = dataset.features.keys - [ self.prediction_feature ]
+      feature_weights = self.weight_model_uri ? AppDomainModel.feature_weights(self.weight_model_uri) : nil
+      raise "no features in dataset" if features.size==0
+      case self.app_domain_alg 
       when /EuclideanDistance/
-        dataset = OpenTox::Dataset.find(self.training_dataset_uri)
-        features = dataset.features.keys - [ self.prediction_feature ]
-        raise "no features in dataset" if features.size==0 
-        self.model_yaml = AppDomain::EuclideanDistance.new(dataset, dataset, features, self.split_app_domain_params()).to_yaml
+        self.model_yaml = AppDomain::EuclideanDistance.new(dataset, dataset, features, self.split_app_domain_params(), feature_weights).to_yaml
+      when /Fingerprint/
+        self.model_yaml = AppDomain::FingerprintModel.new(dataset, dataset, features, self.split_app_domain_params(), feature_weights ).to_yaml
       end
       self.finished = true
       self.save

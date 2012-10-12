@@ -79,6 +79,13 @@ class AppDomainTest < Test::Unit::TestCase
   def test_it
     begin
       
+      post 'Fingerprint/2001',{"app_domain_alg"=>"Fingerprint", "id"=>"2001", "dataset_uri"=>"http://local-ot/dataset/13100"}
+      uri = last_response.body
+      model = wait_for_task(uri)
+      puts "model #{model}"
+      
+      id = model.split("/").last
+      exit
      # AppDomain::EuclideanDistance.demo()
      # exit
       
@@ -103,16 +110,16 @@ class AppDomainTest < Test::Unit::TestCase
       #alg = "J48"
       
       #kazius 250 ob
-      dataset_uri = "http://local-ot/dataset/1623"
-      prediction_feature = "http://local-ot/dataset/1623/feature/endpoint"
-      
-      #       0.3 - 0.7 split
-      training_dataset_uri = "http://local-ot/dataset/48761"
-      test_dataset_uri = "http://local-ot/dataset/48762"
-      
-      dataset_uri = "http://local-ot/dataset/8998"
-      prediction_feature = "http://local-ot/dataset/8998/feature/Hamster%20Carcinogenicity"
-      alg = "EuclideanDistance"
+#      dataset_uri = "http://local-ot/dataset/1623"
+#      prediction_feature = "http://local-ot/dataset/1623/feature/endpoint"
+#      
+#      #       0.3 - 0.7 split
+#      training_dataset_uri = "http://local-ot/dataset/48761"
+#      test_dataset_uri = "http://local-ot/dataset/48762"
+#      
+#      dataset_uri = "http://local-ot/dataset/8998"
+#      prediction_feature = "http://local-ot/dataset/8998/feature/Hamster%20Carcinogenicity"
+#      alg = "EuclideanDistance"
       
       #prediction_feature = "http://locar l-ot/dataset/7501/feature/LOGINV_MRDD_mmol"
       #training_dataset_uri= "http://local-ot/dataset/7502"
@@ -130,10 +137,14 @@ class AppDomainTest < Test::Unit::TestCase
       #training_dataset_uri="http://opentox.informatik.uni-freiburg.de/dataset/4338" 
       #test_dataset_uri="http://opentox.informatik.uni-freiburg.de/dataset/4339"
       
-     prediction_feature="http://opentox.informatik.uni-freiburg.de/dataset/3088/feature/MTP"
-     training_dataset_uri="http://opentox.informatik.uni-freiburg.de/dataset/5877"
-      
-     params = {:dataset_uri => training_dataset_uri, :prediction_feature => prediction_feature, :app_domain_param_method=>"knn" }
+      alg = "EuclideanDistance"
+     training_dataset_uri="http://local-ot/dataset/12136"
+     prediction_feature="http://local-ot/dataset/12086/feature/endpoint" 
+     weight_model_uri="http://local-ot/weka/RandomForest/1747"
+     params = {:dataset_uri => training_dataset_uri,
+       :prediction_feature => prediction_feature,
+       #:app_domain_param_method=>"knn",
+       :weight_model_uri => weight_model_uri}
       
      post "/#{alg}",params
      uri = last_response.body

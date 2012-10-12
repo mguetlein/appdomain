@@ -29,7 +29,7 @@ post '/:app_domain_alg/:id' do
     raise OpenTox::BadRequestError.new("#{p} missing") unless params[p].to_s.size>0
   end
 
-  dataset = model.find_predicted_model(params[:dataset_uri])
+  dataset = model.find_predicted_dataset(params[:dataset_uri])
   if dataset
     LOGGER.info "found already existing appdomain result: #{dataset}"
     dataset

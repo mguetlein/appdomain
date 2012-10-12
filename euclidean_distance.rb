@@ -1,4 +1,11 @@
 require "statsample"
+require "app_util.rb"
+
+class Object
+  def deep_copy()
+    Marshal.load(Marshal.dump(self))
+  end
+end
 
 class Array
   def pct_rank(v)
@@ -25,59 +32,21 @@ module AppDomain
   
   class EuclideanDistance
     
-    def normalize(feature,val)
-      raise if @min[feature]==nil && @delta[feature]==nil
-      if @delta[feature]==0
-        if val==@min[feature]
-          v = 0.0
-        else
-          v = 1.0
-        end
-      else  
-        v = (val-@min[feature])/@delta[feature]
-      end
-      raise "nan val: #{val}, min: #{@min[feature]}, delta: #{@delta[feature]}" if (v.nan?)
-      v
-    end
-    
-    def dist(c1, c2, values_c1, values_c2)
+    def dist(c1, c2, values_c1, values_c2, feature_weights=nil)
       d = 0
       @features.each do |f|
         raise if values_c1[c1][f]==nil && values_c2[c2][f]==nil
-        #puts "single dist #{f} #{(values_c1[c1][f] - values_c2[c2][f])}" 
-        d += (values_c1[c1][f] - values_c2[c2][f])**2
+        #puts "single dist #{f} #{(values_c1[c1][f] - values_c2[c2][f])}"
+        w = (feature_weights==nil ? 1 : feature_weights[f])
+        raise "should be filtered out before" if w==nil || w==0
+        d += (values_c1[c1][f] - values_c2[c2][f])**2 * w 
       end
       d = Math.sqrt(d)
       d = d / @features.size
       d
     end
     
-    def val(d,c,f,missing_value=nil)
-      return 0 if d.data_entries[c]==nil || d.data_entries[c][f]==nil
-#      raise "get val #{d.uri} #{c} #{f}"
-      v = d.data_entries[c][f]
-      if v==nil
-        return nil
-      elsif v.is_a?(Array)
-        if v.size==0
-          return nil
-        else
-          return v.to_scale.mean
-        end
-      end
-      raise v.to_s
-    end
-    
-    private
-    def numeric?(d,f)
-      return true if f=~/\/feature\/bbrc\// 
-      type = d.features[f][RDF.type]
-      raise unless type
-      type.to_a.flatten.include?(OT.NumericFeature) 
-    end
-    
-    public
-    def initialize(training_dataset, feature_dataset=training_dataset, features=nil, params={})
+    def initialize(training_dataset, feature_dataset=training_dataset, features=nil, params={}, feature_weights=nil)
       
       @method = "center"
       @num_neighbors = 5
@@ -101,38 +70,44 @@ module AppDomain
       feature_dataset = feature_dataset
       @compounds = training_dataset.compounds
       if features
-        @features = features
-        features.each{|f| raise "not numeric: #{f}" unless numeric?(feature_dataset,f)}
+        @features = features.deep_copy
+        features.each{|f| raise "not numeric: #{f}" unless AppDomain::Util.numeric?(feature_dataset,f)}
       else
         @features = feature_dataset.features.keys
         @features.delete_if do |f|
-          num = numeric?(feature_dataset,f) 
+          num = AppDomain::Util.numeric?(feature_dataset,f) 
           LOGGER.warn "skipping non-numeric-feature #{f}" unless num
           !num
         end  
       end
-      LOGGER.debug "init AD - #compunds #{@compounds.size}, #features #{@features.size}"
       
+      weight_less = 0
+      if feature_weights
+        @features.delete_if do |f|
+          no_weight = (feature_weights[f]==nil || feature_weights[f]==0)
+          LOGGER.debug "remove weightless feature #{f}" if no_weight
+          weight_less += 1 if no_weight
+          no_weight
+        end
+      end
+      @feature_weights = feature_weights
+      
+      LOGGER.debug "init AD - #compunds #{@compounds.size}, #features #{@features.size}"
+      if feature_weights
+        LOGGER.debug "init AD - #{weight_less}/#{weight_less+@features.size} weightless features have been removed"
+        LOGGER.debug "init AD - feature_weights: "+@feature_weights.values.delete_if{|w| w==nil or w==0}.sort{|a,b| b<=>a}.join(", ")
+      end
+      
+            
       LOGGER.debug "init AD - normalize features"
       
-      @min = {}
-      @delta = {}
-      @features.each do |f|
-        min = Float::MAX
-        max = -Float::MAX
-        @compounds.each do |c|
-          min = [min,val(feature_dataset,c,f)].min
-          max = [max,val(feature_dataset,c,f)].max
-        end
-        @min[f] = min
-        @delta[f] = max-min
-      end
+      @normalized = AppDomain::NormalizedValues.new(@features,@compounds,feature_dataset)
       
       @training_values = {}
       @compounds.each do |c|
         @training_values[c] = {}
         @features.each do |f|
-          @training_values[c][f] = normalize(f,val(feature_dataset,c,f))
+          @training_values[c][f] = @normalized.normalize(f,AppDomain::Util.val(feature_dataset,c,f))
         end
       end
      
@@ -153,7 +128,7 @@ module AppDomain
         LOGGER.debug "init AD - compute distance to center"
         distances = []
         @compounds.each do |c|
-          distances << dist(@center_compound,c,@values,@training_values)
+          distances << dist(@center_compound,c,@values,@training_values,@feature_weights)
         end
         @median = distances.to_scale.median
         @compounds=nil
@@ -163,7 +138,7 @@ module AppDomain
         distance_hash = {}  
         @compounds.size.times do |i|
           (0..(i-1)).each do |j|
-            distance_hash[[@compounds[i],@compounds[j]].sort] = dist(@compounds[i],@compounds[j],@training_values,@training_values)
+            distance_hash[[@compounds[i],@compounds[j]].sort] = dist(@compounds[i],@compounds[j],@training_values,@training_values,@feature_weights)
           end
         end
         LOGGER.debug "init AD - compute knn distance"
@@ -188,16 +163,16 @@ module AppDomain
       test_values = {}
       test_values[test_compound] = {}
       @features.each do |f|
-        test_values[test_compound][f] = normalize(f,val(test_dataset,test_compound,f))
+        test_values[test_compound][f] = @normalized.normalize(f,AppDomain::Util.val(test_dataset,test_compound,f))
         #puts "value #{f} orig: #{val(test_dataset,test_compound,f)} norm: #{test_values[test_compound][f]}"
       end
       
       if (!defined?(@method)) or @method=="center" 
-        dist = dist(test_compound,@center_compound,test_values,@values)
+        dist = dist(test_compound,@center_compound,test_values,@values,@feature_weights)
       elsif @method=="knn"
         distances = []
         @compounds.each do |c|
-          distances << dist(test_compound,c,test_values,@training_values)
+          distances << dist(test_compound,c,test_values,@training_values,@feature_weights)
         end
         distances = distances.sort[0..(@num_neighbors-1)]
         dist = distances.to_scale.mean
