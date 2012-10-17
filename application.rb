@@ -101,29 +101,37 @@ delete '/:app_domain_alg/:id' do
   "deleted model with id #{params[:id]}\n"
 end
 
-get '/:app_domain_alg/:id/predicted/:prop' do
-  model = Weka::WekaModel.get(params[:id])
-    raise OpenTox::NotFoundError.new("app-domain-model '#{params[:id]}' not found.") unless model
-  model.subjectid = @subjectid
-  if params[:prop] == "value"
-    feature = model.prediction_value_feature
-  else
-    raise OpenTox::BadRequestError.new "Unknown URI #{@uri}"
-  end
-  case @accept
-  when /yaml/
-    content_type "application/x-yaml"
-    feature.metadata.to_yaml
-  when /rdf/
-    content_type "application/rdf+xml"
-    feature.to_rdfxml
-  when /html/
-    content_type "text/html"
-    OpenTox.text_to_html feature.metadata.to_yaml
-  else
-    raise OpenTox::BadRequestError.new "Unsupported MIME type '#{@accept}'"
-  end
-end
+#get '/:app_domain_alg/:id/predicted/:prop' do
+#  model = Weka::WekaModel.get(params[:id])
+#    raise OpenTox::NotFoundError.new("app-domain-model '#{params[:id]}' not found.") unless model
+#  model.subjectid = @subjectid
+#  if params[:prop] == "value"
+#    feature = model.prediction_value_feature
+#  else
+#    raise OpenTox::BadRequestError.new "Unknown URI #{@uri}"
+#  end
+#  case @accept
+#  when /yaml/
+#    content_type "application/x-yaml"
+#    feature.metadata.to_yaml
+#  when /rdf/
+#    content_type "application/rdf+xml"
+#    feature.to_rdfxml
+#  when /html/
+#    content_type "text/html"
+#    OpenTox.text_to_html feature.metadata.to_yaml
+#  else
+#    raise OpenTox::BadRequestError.new "Unsupported MIME type '#{@accept}'"
+#  end
+#end
 
+get '/migrate' do
+  content_type "text/plain"
+  AppDomain::AppDomainModel.all.each do |m|
+    m.migrate_to_filesystem
+    LOGGER.info "migrated #{m.id}"
+  end
+  "done"
+end
 
 

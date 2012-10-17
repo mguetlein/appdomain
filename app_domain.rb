@@ -1,8 +1,11 @@
 
 require 'euclidean_distance.rb'
 require 'fingerprint.rb'
+require 'open3'
 
 set :lock, true
+
+@@modeldir = "model"
 
 class String
   def to_boolean
@@ -10,6 +13,33 @@ class String
     return false if self == false || self.nil? || self =~ (/(false|f|no|n|0)$/i)
     raise ArgumentError.new("invalid value for Boolean: '#{self}'")
   end
+end
+
+module ZipUtil
+  
+  def self.zip(zip_file, file)
+    LOGGER.debug "zipping #{zip_file}"
+    stdin, stdout, stderr = Open3.popen3("/usr/bin/zip -D #{zip_file} #{file}")
+    LOGGER.debug stdout.readlines.collect{|l| l.chomp}.join(";")
+    LOGGER.debug stderr.readlines.collect{|l| l.chomp}.join(";")
+    stdout.close
+    stderr.close
+    stdin.close
+    raise "could not zip file" unless File.exist?(zip_file)
+    File.delete(file)
+  end
+  
+  def self.unzip(zip_file, dir)
+    LOGGER.debug "unzipping #{zip_file}"
+    raise "no zip file found" unless File.exist?(zip_file)
+    stdin, stdout, stderr = Open3.popen3("/usr/bin/unzip -nj #{zip_file} -d #{dir}")
+    LOGGER.debug stdout.readlines.collect{|l| l.chomp}.join(";")
+    LOGGER.debug stderr.readlines.collect{|l| l.chomp}.join(";")
+    stdout.close
+    stderr.close
+    stdin.close
+  end
+  
 end
 
 module AppDomain
@@ -135,10 +165,11 @@ module AppDomain
       raise "no features in dataset" if features.size==0
       case self.app_domain_alg 
       when /EuclideanDistance/
-        self.model_yaml = AppDomain::EuclideanDistance.new(dataset, dataset, features, self.split_app_domain_params(), feature_weights).to_yaml
+        m_yaml = AppDomain::EuclideanDistance.new(dataset, dataset, features, self.split_app_domain_params(), feature_weights).to_yaml
       when /Fingerprint/
-        self.model_yaml = AppDomain::FingerprintModel.new(dataset, dataset, features, self.split_app_domain_params(), feature_weights ).to_yaml
+        m_yaml = AppDomain::FingerprintModel.new(dataset, dataset, features, self.split_app_domain_params(), feature_weights ).to_yaml
       end
+      store_m_yaml(m_yaml)
       self.finished = true
       self.save
     end
@@ -174,9 +205,42 @@ module AppDomain
       feature
     end
     
+    def model_file
+      @@modeldir+"/"+self.id+".model"
+    end
+
+    def model_zip_file
+      "#{self.model_file()}.zip"
+    end
+
+    def migrate_to_filesystem()
+      raise "model dir missing" unless File.exist?(@@modeldir)
+      if self.model_yaml!=nil and self.model_yaml.to_s.length>0
+        File.open(model_file,"w+"){|f| f.puts model_yaml}
+        ZipUtil.zip(model_zip_file(),model_file())
+        m_yaml = load_m_yaml 
+        raise m_yaml+" \n!=\n "+self.model_yaml unless m_yaml==self.model_yaml
+        self.model_yaml=nil
+        self.save
+      end
+    end
+    
+    def store_m_yaml(m_yaml)
+      File.open(model_file,"w+"){|f| f.puts m_yaml}
+      ZipUtil.zip(model_zip_file(),model_file())
+    end
+    
+    def load_m_yaml
+      ZipUtil.unzip(model_zip_file,@@modeldir) unless File.exist?(model_file()) 
+      raise "could not unzip file" unless File.exist?(self.model_file())
+      yaml = IO.readlines(model_file).join("")
+      File.delete(model_file()) if File.exist?(self.model_zip_file())
+      yaml
+    end
+          
     def apply(dataset_uri, waiting_task=nil)
       
-      model = YAML.load(model_yaml)
+      model = YAML.load(load_m_yaml)
       test_dataset = OpenTox::Dataset.find(dataset_uri)
       dataset = OpenTox::Dataset.create(CONFIG[:services]["opentox-dataset"],subjectid)
       metadata = { DC.creator => self.uri, OT.hasSource => dataset_uri }  
