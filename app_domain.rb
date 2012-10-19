@@ -1,7 +1,6 @@
 
 require 'euclidean_distance.rb'
 require 'fingerprint.rb'
-require 'open3'
 
 set :lock, true
 
@@ -13,33 +12,6 @@ class String
     return false if self == false || self.nil? || self =~ (/(false|f|no|n|0)$/i)
     raise ArgumentError.new("invalid value for Boolean: '#{self}'")
   end
-end
-
-module ZipUtil
-  
-  def self.zip(zip_file, file)
-    LOGGER.debug "zipping #{zip_file}"
-    stdin, stdout, stderr = Open3.popen3("/usr/bin/zip -D #{zip_file} #{file}")
-    LOGGER.debug stdout.readlines.collect{|l| l.chomp}.join(";")
-    LOGGER.debug stderr.readlines.collect{|l| l.chomp}.join(";")
-    stdout.close
-    stderr.close
-    stdin.close
-    raise "could not zip file" unless File.exist?(zip_file)
-    File.delete(file)
-  end
-  
-  def self.unzip(zip_file, dir)
-    LOGGER.debug "unzipping #{zip_file}"
-    raise "no zip file found" unless File.exist?(zip_file)
-    stdin, stdout, stderr = Open3.popen3("/usr/bin/unzip -nj #{zip_file} -d #{dir}")
-    LOGGER.debug stdout.readlines.collect{|l| l.chomp}.join(";")
-    LOGGER.debug stderr.readlines.collect{|l| l.chomp}.join(";")
-    stdout.close
-    stderr.close
-    stdin.close
-  end
-  
 end
 
 module AppDomain
